@@ -1,6 +1,6 @@
-# nickvargas.netlify.app
+# nickvargas.xyz
 
 Portfolio for Nick Vargas: live music, photos, video.
 
 A single static page (`index.html`) with its photos and clips in `media/`. No build step.
-Pushing to `main` deploys to Netlify automatically.
+Pushing to `main` publishes to GitHub Pages automatically.
