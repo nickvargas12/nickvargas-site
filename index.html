@@ -115,6 +115,13 @@ p { margin: 0; }
   .p1 .copy { left: calc(min(56.25vh, 46vw) + 64px); left: calc(min(56.25svh, 46vw) + 64px); right: 48px; bottom: 64px; }
 }
 @media (max-width: 640px) {
+  /* Chipped Nail Polish: on phones the collage scrolls as a normal section so every photo keeps its own shape */
+  .pk { position: relative; height: auto; }
+  .pk .trip { position: static; inset: auto; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: none; gap: 4px; }
+  .pk .trip img { grid-column: span 1; height: auto; aspect-ratio: 2 / 3; }
+  .pk .trip img.land { grid-column: 1 / -1; aspect-ratio: 3 / 2; }
+  .pk .shade { display: none; }
+  .pk .copy { position: static; padding: 28px 18px 48px; }
   .p1 .copy, .p2 .copy { bottom: 92px; }
   .p3 .wide { height: 40%; }
   .p3 .wide-fade { top: 22%; height: 18.5%; }
