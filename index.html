@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nick Vargas · live music, photos, video</title>
+<meta name="description" content="Live music, photos and video by Nick Vargas.">
+<meta property="og:title" content="Nick Vargas · live music, photos, video">
+<meta property="og:description" content="Live music, photos and video by Nick Vargas.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Layout idea: each piece is a full-screen card pinned in place; the next card slides up over it. One dark stage theme by choice. */
+  --ink: #0e1014;
+  --text: #ece7df;
+  --muted: #b9b5ac;
+  --tungsten: #ffb043;
+  --wine: #5c0c24;
+  --navy: #0a1630;
+  --teal: #0b2030;
+  --fuchsia: #a3195b;
+  --cobalt: #1c2f86;
+  --display: "Newsreader", "Times New Roman", Georgia, serif;
+  --body: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --mono: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--ink); color: var(--text); font-family: var(--body); font-size: 17px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--tungsten); outline-offset: 3px; }
+h1, h2, h3 { font-family: var(--display); font-optical-sizing: auto; font-weight: 400; text-transform: lowercase; letter-spacing: -0.01em; margin: 0; line-height: 1.02; text-wrap: balance; }
+p { margin: 0; }
+
+/* top bar */
+.bar {
+  position: fixed; inset: 0 0 auto 0; z-index: 50;
+  display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  padding: 14px clamp(16px, 4vw, 40px);
+  background: linear-gradient(rgba(14,16,20,0.75), rgba(14,16,20,0));
+}
+.brand { font: 900 26px var(--display); letter-spacing: 0.05em; text-decoration: none; }
+.bar nav { display: flex; gap: clamp(12px, 2.5vw, 26px); flex-wrap: wrap; }
+.bar nav a { text-decoration: none; font-weight: 600; font-size: 15px; color: var(--text); opacity: 0.85; }
+.bar nav a:hover { opacity: 1; color: var(--tungsten); }
+
+/* opening */
+.open {
+  position: relative; min-height: 100vh; min-height: 100svh; overflow: hidden;
+  display: grid; align-content: end; padding: 120px clamp(16px, 5vw, 64px) 56px;
+}
+.open img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.4; }
+.open::after { content: ""; position: absolute; inset: 0; background: linear-gradient(rgba(14,16,20,0.2), var(--ink) 92%); }
+.open > * { position: relative; z-index: 1; }
+.wordmark { font: 900 clamp(110px, 24vw, 330px)/0.8 var(--display); letter-spacing: 0.01em; margin-left: -0.03em; }
+.tag { font: 400 clamp(52px, 8vw, 120px)/1 var(--display); text-transform: lowercase; letter-spacing: -0.015em; max-width: 15ch; text-shadow: 0 2px 18px rgba(0,0,0,0.45); }
+.cue { margin-top: 36px; display: flex; align-items: center; gap: 12px; font: 500 15px var(--mono); text-transform: lowercase; color: var(--tungsten); }
+.cue::before { content: ""; width: 34px; height: 1px; background: var(--tungsten); }
+
+/* the stack */
+.stack { position: relative; }
+.piece {
+  position: sticky; top: 0;
+  height: 100vh; height: 100svh;
+  overflow: hidden;
+  transform-origin: 50% 0;
+  will-change: transform, filter;
+}
+.piece + .piece { border-radius: 22px 22px 0 0; box-shadow: 0 -24px 48px rgba(0,0,0,0.55); }
+.media { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #000; }
+.shade { position: absolute; inset: 0; pointer-events: none; }
+.copy { position: absolute; z-index: 2; display: grid; gap: 10px; max-width: 640px; }
+.num { font: 400 clamp(90px, 13vw, 180px)/0.85 var(--display); letter-spacing: -0.02em; color: var(--tungsten); }
+.copy h2 { font-size: clamp(38px, 5.2vw, 72px); text-shadow: 0 2px 14px rgba(0,0,0,0.4); }
+.copy p { font-size: clamp(16px, 1.4vw, 19px); max-width: 44ch; color: rgba(236,231,223,0.92); }
+.slot { outline: 1.5px dashed var(--tungsten); outline-offset: 6px; }
+.handle { justify-self: start; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font: 500 16px var(--mono); color: var(--tungsten); text-decoration: none; }
+.handle:hover { color: #ffd08a; text-decoration: underline; }
+.ig { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+
+/* 01 · tall video: full-bleed on phones, a tall frame beside a wine panel on wide screens */
+.p1 { background: var(--wine); }
+.p1 .shade { background: linear-gradient(rgba(14,3,8,0.45), rgba(14,3,8,0) 22%, rgba(14,3,8,0) 45%, rgba(14,3,8,0.94)); }
+.p1 .copy { left: clamp(18px, 4vw, 48px); right: clamp(18px, 4vw, 48px); bottom: 40px; }
+/* 02 · wide video */
+.p2 { background: var(--navy); }
+.p2 .shade { background: linear-gradient(rgba(6,10,24,0.5), rgba(6,10,24,0) 22%, rgba(10,22,48,0) 48%, rgba(10,22,48,0.95)); }
+.p2 .copy { left: clamp(18px, 4vw, 48px); right: clamp(18px, 4vw, 48px); bottom: 40px; }
+/* 03 · warm triptych */
+.pk { background: #24170f; }
+.trip { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: 40% minmax(0, 1fr); gap: 6px; }
+.trip img { grid-column: span 2; }
+.trip img.land { grid-column: span 3; }
+.trip img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pk .shade { background: linear-gradient(rgba(20,12,8,0) 55%, rgba(20,12,8,0.94)); }
+.pk .copy { left: clamp(18px, 4vw, 48px); right: clamp(18px, 4vw, 48px); bottom: 40px; }
+/* 04 · two photos */
+.p3 { background: var(--teal); }
+.p3 .wide { position: absolute; left: 0; right: 0; top: 0; height: 52%; width: 100%; object-fit: cover; }
+.p3 .wide-fade { position: absolute; left: 0; right: 0; top: 30%; height: 22.5%; background: linear-gradient(rgba(11,32,48,0), var(--teal)); }
+.p3 .tall { position: absolute; right: clamp(18px, 4vw, 48px); bottom: 40px; width: min(38vw, 300px); aspect-ratio: 2 / 3; object-fit: cover; box-shadow: 0 18px 40px rgba(0,0,0,0.5); }
+.p3 .copy { left: clamp(18px, 4vw, 48px); bottom: 40px; max-width: min(52vw, 520px); }
+/* 04 · tall photo beside a fuchsia column */
+.p4 { background: var(--fuchsia); }
+.p4 .media { left: auto; width: 62%; }
+.p4 .copy { left: clamp(18px, 4vw, 48px); top: 130px; width: calc(38% - clamp(36px, 8vw, 96px)); }
+.p4 .copy h2 { font-size: clamp(32px, 4.2vw, 62px); }
+
+@media (min-width: 900px) {
+  .p1 .media { width: min(56.25vh, 46vw); width: min(56.25svh, 46vw); }
+  .p1 .shade { width: min(56.25vh, 46vw); width: min(56.25svh, 46vw); background: linear-gradient(rgba(14,3,8,0.45), rgba(14,3,8,0) 25%); }
+  .p1 .copy { left: calc(min(56.25vh, 46vw) + 64px); left: calc(min(56.25svh, 46vw) + 64px); right: 48px; bottom: 64px; }
+}
+@media (max-width: 640px) {
+  .p1 .copy, .p2 .copy { bottom: 92px; }
+  .p3 .wide { height: 40%; }
+  .p3 .wide-fade { top: 22%; height: 18.5%; }
+  .p3 .tall { width: 40vw; bottom: auto; top: 44%; }
+  .p3 .copy { max-width: calc(56vw - 24px); }
+  .p3 .copy h2 { font-size: 32px; }
+  .p3 .copy p { font-size: 15px; }
+  .p4 .media { width: 100%; height: 58%; top: 0; bottom: auto; }
+  .p4 .copy { top: auto; bottom: 36px; width: auto; right: 18px; }
+}
+
+/* sound switch: a picture of a switch, speaker off on the left, sound waves on the right */
+.sound {
+  position: fixed; right: clamp(14px, 3vw, 32px); bottom: clamp(14px, 3vw, 28px); z-index: 60;
+  width: 92px; height: 50px; padding: 0; border-radius: 25px; cursor: pointer;
+  background: rgba(14,16,20,0.85); border: 2px solid var(--tungsten);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+  transition: background 0.25s ease, opacity 0.25s ease, transform 0.25s ease;
+}
+.sound[hidden] { display: block; opacity: 0; transform: translateY(12px); pointer-events: none; }
+.sound .knob {
+  position: absolute; top: 3px; left: 3px; width: 40px; height: 40px; border-radius: 50%;
+  background: var(--tungsten); display: grid; place-items: center;
+  transition: transform 0.25s ease, background 0.25s ease;
+}
+.sound svg { width: 22px; height: 22px; fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sound .on-ico { display: none; }
+.sound[aria-checked="true"] { background: var(--tungsten); }
+.sound[aria-checked="true"] .knob { transform: translateX(42px); background: var(--ink); }
+.sound[aria-checked="true"] svg { stroke: var(--tungsten); }
+.sound[aria-checked="true"] .on-ico { display: block; }
+.sound[aria-checked="true"] .off-ico { display: none; }
+/* until sound is on, a soft ring pulses to invite a tap */
+.sound[aria-checked="false"]::after { content: ""; position: absolute; inset: -6px; border-radius: 31px; border: 2px solid var(--tungsten); opacity: 0; animation: ring 2.4s ease-out infinite; }
+@keyframes ring { 0% { opacity: 0.7; transform: scale(0.96); } 100% { opacity: 0; transform: scale(1.18); } }
+
+/* after the stack */
+.section { position: relative; z-index: 5; padding: clamp(64px, 10vw, 120px) clamp(18px, 5vw, 64px); }
+.book { background: var(--tungsten); color: var(--ink); border-radius: 22px 22px 0 0; box-shadow: 0 -24px 48px rgba(0,0,0,0.55); }
+.book h2 { font-size: clamp(72px, 13vw, 190px); line-height: 0.92; letter-spacing: -0.02em; }
+.book-row { margin-top: 44px; display: flex; flex-wrap: wrap; gap: 14px; }
+.book-row a { min-height: 52px; padding: 0 22px; display: inline-flex; align-items: center; border: 2px solid var(--ink); border-radius: 2px; font-weight: 600; text-decoration: none; }
+.book-row a.primary { background: var(--ink); color: var(--text); }
+.book-row .slot { outline-color: var(--ink); }
+.about { background: var(--ink); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: clamp(32px, 6vw, 88px); align-items: center; }
+.about h2 { font-size: clamp(56px, 8vw, 120px); line-height: 0.95; letter-spacing: -0.02em; color: var(--text); }
+.about-text { display: grid; gap: 18px; max-width: 34ch; }
+.about-text p { font: 400 clamp(19px, 1.7vw, 24px)/1.45 var(--display); color: rgba(236,231,223,0.9); }
+.about-text .signoff { margin-top: 10px; font-style: italic; color: var(--tungsten); }
+.about-photos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.about-photos img { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; display: block; }
+.about-photos img:last-child { margin-top: 18%; }
+@media (max-width: 760px) {
+  .about { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 760px) {
+  .bar nav a.hide-sm { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .piece { will-change: auto; }
+  .sound::after { animation: none !important; }
+  .sound .knob { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<main id="top">
+  <section class="open" aria-label="Introduction">
+    <img src="media/faight_poster.jpg" alt="">
+    <h1 class="tag">live music, photos, video</h1>
+    <p class="cue">Scroll for the work</p>
+  </section>
+
+  <div class="stack" id="work">
+    <article class="piece p1" data-video="v1" aria-labelledby="t1">
+      <video id="v1" class="media" playsinline loop muted preload="auto" poster="media/faight_poster.jpg" data-sound="1">
+        <source src="media/faight_song3.mp4" type="video/mp4">
+      </video>
+      <div class="shade"></div>
+      <div class="copy">
+        <span class="num">01</span>
+        <h2 id="t1">Alana Silver live at The Faight</h2>
+        <a class="handle" href="https://www.instagram.com/alanasilvermusic/"><svg class="ig" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="1"/></svg>@alanasilvermusic</a>
+      </div>
+    </article>
+
+    <article class="piece p2" data-video="v2" aria-labelledby="t2">
+      <video id="v2" class="media" data-silent="1" playsinline loop muted preload="metadata" poster="media/brick_poster.jpg">
+        <source src="media/bad_decision.mp4" type="video/mp4">
+      </video>
+      <div class="shade"></div>
+      <div class="copy">
+        <span class="num">02</span>
+        <h2 id="t2">Tomboy at Brick &amp; Mortar</h2>
+        <a class="handle" href="https://www.instagram.com/tomboy_the_band/"><svg class="ig" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="1"/></svg>@tomboy_the_band</a>
+      </div>
+    </article>
+
+    <article class="piece pk" aria-labelledby="tk">
+      <div class="trip">
+        <img class="land" src="media/kilowatt_65.jpg" alt="Chipped Nail Polish on the Kilowatt stage, drummer between the guitarist and bassist" loading="lazy">
+        <img class="land" src="media/kilowatt_67.jpg" alt="Two bandmates with ukuleles mid-song in front of the curtain" loading="lazy">
+        <img src="media/kilowatt_72.jpg" alt="Bassist in a band T-shirt playing a white bass against the curtain" loading="lazy">
+        <img src="media/kilowatt_78.jpg" alt="Singer laughing at the mic with a ukulele under a single stage light" loading="lazy">
+        <img src="media/kilowatt_81.jpg" alt="Singer with a ukulele at the mic, bandmate behind" loading="lazy">
+      </div>
+      <div class="shade"></div>
+      <div class="copy">
+        <span class="num">03</span>
+        <h2 id="tk">Chipped Nail Polish at Kilowatt Bar</h2>
+        <a class="handle" href="https://www.instagram.com/chippednailsband/"><svg class="ig" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="1"/></svg>@chippednailsband</a>
+      </div>
+    </article>
+
+    <article class="piece p3" aria-labelledby="t3">
+      <img class="wide" src="media/dj_night.jpg" alt="WaxOnOak at the decks under blue light, candles on the table" loading="lazy">
+      <div class="wide-fade"></div>
+      <img class="tall" src="media/dj_portrait.jpg" alt="WaxOnOak in headphones working the mixer under blue and red lights" loading="lazy">
+      <div class="copy">
+        <span class="num">04</span>
+        <h2 id="t3">WaxOnOak at 1015 Folsom</h2>
+        <a class="handle" href="https://www.instagram.com/wax_on_oak/"><svg class="ig" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="1"/></svg>@wax_on_oak</a>
+      </div>
+    </article>
+
+    <article class="piece p4" aria-labelledby="t4">
+      <img class="media" src="media/folklorico.jpg" alt="Two Ensambles dancers on the sidewalk, her blue skirt flared" loading="lazy">
+      <div class="copy">
+        <span class="num">05</span>
+        <h2 id="t4">Ensambles Ballet Folklórico de SF</h2>
+        <a class="handle" href="https://www.instagram.com/ensamblesbf/"><svg class="ig" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="1"/></svg>@ensamblesbf</a>
+      </div>
+    </article>
+  </div>
+
+  <section class="section book" id="book">
+    <h2>Playing a show soon?</h2>
+    <div class="book-row">
+      <a class="primary" href="mailto:nickvargasthings@gmail.com">nickvargasthings@gmail.com</a>
+      <a href="https://www.instagram.com/nick_vargas_media/"><svg class="ig" viewBox="0 0 24 24" aria-hidden="true" style="margin-right: 8px"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="1"/></svg>@nick_vargas_media</a>
+    </div>
+  </section>
+
+  <section class="section about" id="about" aria-labelledby="about-h">
+    <div class="about-text">
+      <h2 id="about-h">hi, i'm nick.</h2>
+      <p>I love catching a moment and making art that captures the energy of an artist or a space.</p>
+      <p>Also, this is my cat.</p>
+      <p class="signoff">Looking forward to working with you, cheers</p>
+    </div>
+    <div class="about-photos">
+      <img src="media/sapo_4.jpg" alt="A fluffy grey kitten looking at the camera in front of a row of guitars" loading="lazy">
+      <img src="media/sapo_3.jpg" alt="The same kitten walking past a keyboard stand and an acoustic guitar" loading="lazy">
+    </div>
+  </section>
+</main>
+
+<button class="sound" id="sound" hidden role="switch" aria-checked="false" aria-label="Sound"><span class="knob"><svg class="off-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg><svg class="on-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19.5 6a8.5 8.5 0 0 1 0 12"/></svg></span></button>
+
+<script>
+(function () {
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const pieces = [...document.querySelectorAll(".piece")];
+  const videos = [...document.querySelectorAll("video")];
+  const btn = document.getElementById("sound");
+
+  // sound state: the visitor wants sound (01 opens with it), browsers only allow it after a tap or key
+  let wantSound = true, unlocked = false, active = null;
+
+  /* ---- stacking: as the next card slides up, the one underneath shrinks back and dims ---- */
+  function onScroll() {
+    if (reduce) return;
+    const vh = window.innerHeight;
+    pieces.forEach((p, i) => {
+      const next = pieces[i + 1] || document.getElementById("book");
+      const top = next.getBoundingClientRect().top;
+      const t = Math.min(1, Math.max(0, 1 - top / vh)); // 0 while next is below, 1 once it covers
+      p.style.transform = t > 0 ? "scale(" + (1 - 0.06 * t) + ")" : "";
+      p.style.filter = t > 0 ? "brightness(" + (1 - 0.55 * t) + ")" : "";
+    });
+  }
+  let ticking = false;
+  window.addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { onScroll(); pickActive(); ticking = false; }); } }, { passive: true });
+  window.addEventListener("resize", () => { onScroll(); pickActive(); });
+
+  /* ---- video: play the one in front, pause the rest ---- */
+  function frontVideo() {
+    // the front card is the last piece whose top has reached the top of the screen (within half a screen)
+    const vh = window.innerHeight; let front = null;
+    pieces.forEach(p => { const r = p.getBoundingClientRect(); if (r.top <= vh * 0.5 && r.bottom > vh * 0.5) front = p; });
+    const svc = document.getElementById("book").getBoundingClientRect().top;
+    if (svc < vh * 0.5) front = null;
+    return front && front.dataset.video ? document.getElementById(front.dataset.video) : null;
+  }
+  function pickActive() {
+    const v = frontVideo();
+    if (v === active) return;
+    if (active) fadeOut(active);
+    active = v;
+    btn.hidden = !active || !!active.dataset.silent;
+    if (active) {
+      if (active.preload !== "auto") active.preload = "auto";
+      playActive();
+    }
+    setLabel();
+  }
+  function playActive() {
+    if (!active) return;
+    const v = active;
+    v.muted = !(wantSound && unlocked) || !!v.dataset.silent;
+    if (!v.muted) { v.volume = 0; ramp(v, 1); }
+    const pr = v.play();
+    if (pr) pr.catch(() => { v.muted = true; v.play().catch(() => {}); setLabel(); });
+  }
+  function fadeOut(v) {
+    if (!v.muted && !v.paused) ramp(v, 0, () => v.pause()); else v.pause();
+  }
+  // short volume ramps so clips cross over instead of cutting
+  function ramp(v, to, done) {
+    if (reduce) { v.volume = to; if (done) done(); return; }
+    const from = v.volume, t0 = performance.now(), dur = 450;
+    (function step(now) {
+      const k = Math.min(1, (now - t0) / dur);
+      v.volume = from + (to - from) * k;
+      if (k < 1) requestAnimationFrame(step); else if (done) done();
+    })(t0);
+  }
+  function setLabel() {
+    const on = active && !active.muted && !active.paused;
+    btn.setAttribute("aria-checked", on ? "true" : "false");
+  }
+  btn.addEventListener("click", () => {
+    unlocked = true;
+    const on = active && !active.muted && !active.paused;
+    wantSound = !on;
+    if (active) { active.muted = !wantSound; if (wantSound) { active.volume = 1; active.play().catch(() => {}); } }
+    setLabel();
+  });
+  // any first tap or key press unlocks audio; if sound is wanted, the clip in front starts speaking
+  function unlock(e) {
+    if (unlocked || (e && e.target === btn)) return;
+    unlocked = true;
+    if (active && wantSound && !active.dataset.silent) { active.muted = false; active.volume = 1; active.play().catch(() => {}); }
+    setLabel();
+  }
+  window.addEventListener("pointerdown", unlock, true);
+  window.addEventListener("keydown", unlock, true);
+  videos.forEach(v => ["play", "pause", "volumechange"].forEach(ev => v.addEventListener(ev, setLabel)));
+
+  onScroll(); pickActive();
+})();
+</script>
+</body>
+</html>
