@@ -248,7 +248,7 @@ p { margin: 0; }
     </article>
 
     <article class="piece p2" data-video="v2" aria-labelledby="t2">
-      <video id="v2" class="media" data-silent="1" playsinline loop muted preload="metadata" poster="media/brick_poster.jpg">
+      <video id="v2" class="media" data-silent="1" playsinline loop muted preload="none" poster="media/brick_poster.jpg">
         <source src="media/bad_decision.mp4" type="video/mp4">
       </video>
       <div class="shade"></div>
@@ -261,11 +261,11 @@ p { margin: 0; }
 
     <article class="piece pk" aria-labelledby="tk">
       <div class="trip">
-        <img class="land" src="media/kilowatt_65.jpg" alt="Chipped Nail Polish on the Kilowatt stage, drummer between the guitarist and bassist" loading="lazy">
-        <img class="land" src="media/kilowatt_67.jpg" alt="Two bandmates with ukuleles mid-song in front of the curtain" loading="lazy">
-        <img src="media/kilowatt_72.jpg" alt="Bassist in a band T-shirt playing a white bass against the curtain" loading="lazy">
-        <img src="media/kilowatt_78.jpg" alt="Singer laughing at the mic with a ukulele under a single stage light" loading="lazy">
-        <img src="media/kilowatt_81.jpg" alt="Singer with a ukulele at the mic, bandmate behind" loading="lazy">
+        <img class="land" src="media/kilowatt_65.jpg" alt="Chipped Nail Polish on the Kilowatt stage, drummer between the guitarist and bassist" loading="lazy" decoding="async">
+        <img class="land" src="media/kilowatt_67.jpg" alt="Two bandmates with ukuleles mid-song in front of the curtain" loading="lazy" decoding="async">
+        <img src="media/kilowatt_72.jpg" alt="Bassist in a band T-shirt playing a white bass against the curtain" loading="lazy" decoding="async">
+        <img src="media/kilowatt_78.jpg" alt="Singer laughing at the mic with a ukulele under a single stage light" loading="lazy" decoding="async">
+        <img src="media/kilowatt_81.jpg" alt="Singer with a ukulele at the mic, bandmate behind" loading="lazy" decoding="async">
       </div>
       <div class="shade"></div>
       <div class="copy">
@@ -276,9 +276,9 @@ p { margin: 0; }
     </article>
 
     <article class="piece p3" aria-labelledby="t3">
-      <img class="wide" src="media/dj_night.jpg" alt="WaxOnOak at the decks under blue light, candles on the table" loading="lazy">
+      <img class="wide" src="media/dj_night.jpg" alt="WaxOnOak at the decks under blue light, candles on the table" loading="lazy" decoding="async">
       <div class="wide-fade"></div>
-      <img class="tall" src="media/dj_portrait.jpg" alt="WaxOnOak in headphones working the mixer under blue and red lights" loading="lazy">
+      <img class="tall" src="media/dj_portrait.jpg" alt="WaxOnOak in headphones working the mixer under blue and red lights" loading="lazy" decoding="async">
       <div class="copy">
         <span class="num">04</span>
         <h2 id="t3">WaxOnOak at 1015 Folsom</h2>
@@ -287,7 +287,7 @@ p { margin: 0; }
     </article>
 
     <article class="piece p4" aria-labelledby="t4">
-      <img class="media" src="media/folklorico.jpg" alt="Two Ensambles dancers on the sidewalk, her blue skirt flared" loading="lazy">
+      <img class="media" src="media/folklorico.jpg" alt="Two Ensambles dancers on the sidewalk, her blue skirt flared" loading="lazy" decoding="async">
       <div class="copy">
         <span class="num">05</span>
         <h2 id="t4">Ensambles Ballet Folklórico de SF</h2>
@@ -312,8 +312,8 @@ p { margin: 0; }
       <p class="signoff">Looking forward to working with you, cheers</p>
     </div>
     <div class="about-photos">
-      <img src="media/sapo_4.jpg" alt="A fluffy grey kitten looking at the camera in front of a row of guitars" loading="lazy">
-      <img src="media/sapo_3.jpg" alt="The same kitten walking past a keyboard stand and an acoustic guitar" loading="lazy">
+      <img src="media/sapo_4.jpg" alt="A fluffy grey kitten looking at the camera in front of a row of guitars" loading="lazy" decoding="async">
+      <img src="media/sapo_3.jpg" alt="The same kitten walking past a keyboard stand and an acoustic guitar" loading="lazy" decoding="async">
     </div>
   </section>
 </main>
@@ -367,6 +367,7 @@ p { margin: 0; }
     }
     setLabel();
     syncSides();
+    warmNext();
   }
   function playActive() {
     if (!active) return;
@@ -393,6 +394,21 @@ p { margin: 0; }
       v.volume = from + (to - from) * k;
       if (k < 1) requestAnimationFrame(step); else if (done) done();
     })(t0);
+  }
+  /* ---- light preloading: main Faight clip first, then its two neighbours, then whichever clip is next down the page.
+     Data-saver / 2G connections only fetch the first frame ahead of time. ---- */
+  const conn = navigator.connection || {};
+  const lean = !!conn.saveData || /2g/.test(conn.effectiveType || "");
+  const RANK = { none: 0, metadata: 1, auto: 2 };
+  function warm(v, level) {
+    if (v && RANK[level] > RANK[v.getAttribute("preload") || "none"]) v.preload = level;
+  }
+  const whenIdle = fn => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 2500 }) : setTimeout(fn, 300));
+  function warmNext() {
+    // the card after the one in front (or the first card while the intro is up)
+    const at = active ? pieces.indexOf(active.closest(".piece")) : -1;
+    const next = pieces.slice(at + 1).find(p => p.dataset.video);
+    if (next) whenIdle(() => warm(document.getElementById(next.dataset.video), lean ? "metadata" : "auto"));
   }
   const sides = [...document.querySelectorAll(".trio .side")];
   const wide = window.matchMedia("(min-width: 900px)");
@@ -461,6 +477,13 @@ p { margin: 0; }
   videos.forEach(v => ["play", "pause", "volumechange"].forEach(ev => v.addEventListener(ev, setLabel)));
 
   placeTrio(); onScroll(); pickActive();
+  // once the main clip can play through, buffer the two swipe/side clips in spare time
+  const main = document.getElementById("v1");
+  let sidesWarm = false;
+  const warmSides = () => { if (sidesWarm) return; sidesWarm = true; whenIdle(() => sides.forEach(s => warm(s, lean ? "metadata" : "auto"))); };
+  if (main.readyState >= 4) warmSides(); else main.addEventListener("canplaythrough", warmSides, { once: true });
+  // phones that don't buffer ahead (iOS) never fire canplaythrough before play; fall back a few seconds after load
+  window.addEventListener("load", () => setTimeout(warmSides, 3000), { once: true });
 })();
 </script>
 </body>
