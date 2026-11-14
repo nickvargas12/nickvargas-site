@@ -355,10 +355,10 @@ p { margin: 0; }
     if (svc < vh * 0.5) front = null;
     return front && front.dataset.video ? document.getElementById(front.dataset.video) : null;
   }
-  function pickActive() {
+  function pickActive(cut) {
     const v = frontVideo();
     if (v === active) return;
-    if (active) fadeOut(active);
+    if (active) fadeOut(active, cut);
     active = v;
     btn.hidden = !active || !!active.dataset.silent;
     if (active) {
@@ -371,19 +371,24 @@ p { margin: 0; }
   function playActive() {
     if (!active) return;
     const v = active;
+    // resuming a paused clip: seek to where it is so the browser re-lines-up its sound with the picture
+    if (v.paused && v.currentTime > 0 && v.readyState > 0) v.currentTime = v.currentTime;
     v.muted = !(wantSound && unlocked) || !!v.dataset.silent;
     if (!v.muted) { v.volume = 0; ramp(v, 1); }
     const pr = v.play();
     if (pr) pr.catch(() => { v.muted = true; v.play().catch(() => {}); setLabel(); });
   }
-  function fadeOut(v) {
-    if (!v.muted && !v.paused) ramp(v, 0, () => v.pause()); else v.pause();
+  function fadeOut(v, cut) {
+    // swipes cut cleanly (iPhones ignore volume, so a fade would overlap two clips); page scrolls fade
+    if (!cut && !v.muted && !v.paused) ramp(v, 0, () => v.pause()); else { v._ramp = (v._ramp || 0) + 1; v.pause(); }
   }
   // short volume ramps so clips cross over instead of cutting
   function ramp(v, to, done) {
-    if (reduce) { v.volume = to; if (done) done(); return; }
+    if (reduce) { v._ramp = (v._ramp || 0) + 1; v.volume = to; if (done) done(); return; }
+    const id = v._ramp = (v._ramp || 0) + 1; // a newer ramp or a cut cancels this one
     const from = v.volume, t0 = performance.now(), dur = 450;
     (function step(now) {
+      if (v._ramp !== id) return;
       const k = Math.min(1, (now - t0) / dur);
       v.volume = from + (to - from) * k;
       if (k < 1) requestAnimationFrame(step); else if (done) done();
@@ -393,17 +398,29 @@ p { margin: 0; }
   const wide = window.matchMedia("(min-width: 900px)");
   const p1 = document.querySelector(".p1"), trio = document.querySelector(".trio");
   const clips = [...trio.querySelectorAll("video")], dots = [...document.querySelectorAll(".dots i")], hint = document.getElementById("swipeHint");
+  const trioIndex = () => Math.max(0, Math.min(clips.length - 1, Math.round(trio.scrollLeft / trio.clientWidth)));
+  // dots follow the finger; the clip (and its sound) only switches once the swipe has landed
   function onTrio() {
     if (wide.matches) return;
-    const i = Math.max(0, Math.min(clips.length - 1, Math.round(trio.scrollLeft / trio.clientWidth)));
+    const i = trioIndex();
     dots.forEach((d, k) => d.classList.toggle("on", k === i));
+  }
+  function landTrio() {
+    if (wide.matches) return;
+    const i = trioIndex();
+    if (Math.abs(trio.scrollLeft - i * trio.clientWidth) > 2) return; // still between clips
     if (p1.dataset.video !== clips[i].id) {
       if (i !== 1 && hint) hint.hidden = true;
       p1.dataset.video = clips[i].id;
-      pickActive();
+      pickActive(true);
     }
   }
-  trio.addEventListener("scroll", () => requestAnimationFrame(onTrio), { passive: true });
+  let settle = 0;
+  trio.addEventListener("scroll", () => {
+    requestAnimationFrame(onTrio);
+    clearTimeout(settle); settle = setTimeout(landTrio, 160);
+  }, { passive: true });
+  if ("onscrollend" in window) trio.addEventListener("scrollend", () => { clearTimeout(settle); landTrio(); });
   function placeTrio() {
     if (wide.matches) { p1.dataset.video = "v1"; return; }
     const i = Math.max(0, clips.findIndex(c => c.id === p1.dataset.video));
