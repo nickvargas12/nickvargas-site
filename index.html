@@ -84,7 +84,20 @@ p { margin: 0; }
 /* 01 · tall video: full-bleed on phones, a tall frame beside a wine panel on wide screens */
 .p1 { background: var(--wine); }
 .trio { position: absolute; inset: 0; }
-.trio .side { display: none; }
+/* phones and tablets: swipe between the three Faight clips; the one in view plays with its own sound */
+@media (max-width: 899px) {
+  .trio { display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .trio::-webkit-scrollbar { display: none; }
+  .trio video { position: relative; inset: auto; flex: 0 0 100%; width: 100%; height: 100%; object-fit: cover; scroll-snap-align: center; scroll-snap-stop: always; background: #000; }
+  .p1 .copy { pointer-events: none; }
+  .p1 .copy .handle { pointer-events: auto; }
+  .dots { position: absolute; z-index: 3; top: 22px; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 8px; pointer-events: none; }
+  .dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(236,231,223,0.45); transition: background 0.2s ease, transform 0.2s ease; }
+  .dots i.on { background: var(--tungsten); transform: scale(1.25); }
+  .swipe-hint { margin-left: 10px; font: 500 13px var(--mono); color: var(--text); text-shadow: 0 1px 6px rgba(0,0,0,0.6); }
+  .swipe-hint[hidden] { display: none; }
+}
+@media (min-width: 900px) { .dots { display: none; } }
 .p1 .shade { background: linear-gradient(rgba(14,3,8,0.45), rgba(14,3,8,0) 22%, rgba(14,3,8,0) 45%, rgba(14,3,8,0.94)); }
 .p1 .copy { left: clamp(18px, 4vw, 48px); right: clamp(18px, 4vw, 48px); bottom: 40px; }
 /* 02 · wide video */
@@ -215,16 +228,17 @@ p { margin: 0; }
   <div class="stack" id="work">
     <article class="piece p1" data-video="v1" aria-labelledby="t1">
       <div class="trio">
-        <video class="side" playsinline loop muted preload="none" poster="media/faight_side_a_poster.jpg" aria-hidden="true">
+        <video id="v1a" class="side" playsinline loop muted preload="none" poster="media/faight_side_a_poster.jpg" data-sound="1" aria-label="Alana Silver at The Faight, wide shot with the band">
           <source src="media/faight_side_a.mp4" type="video/mp4">
         </video>
         <video id="v1" class="media" playsinline loop muted preload="auto" poster="media/faight_poster.jpg" data-sound="1">
           <source src="media/faight_song3.mp4" type="video/mp4">
         </video>
-        <video class="side" playsinline loop muted preload="none" poster="media/faight_side_b_poster.jpg" aria-hidden="true">
+        <video id="v1b" class="side" playsinline loop muted preload="none" poster="media/faight_side_b_poster.jpg" data-sound="1" aria-label="Alana Silver at The Faight, close-up at the mic">
           <source src="media/faight_side_b.mp4" type="video/mp4">
         </video>
       </div>
+      <div class="dots" aria-hidden="true"><i></i><i class="on"></i><i></i><span class="swipe-hint" id="swipeHint">swipe</span></div>
       <div class="shade"></div>
       <div class="copy">
         <span class="num">01</span>
@@ -330,7 +344,7 @@ p { margin: 0; }
   }
   let ticking = false;
   window.addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { onScroll(); pickActive(); ticking = false; }); } }, { passive: true });
-  window.addEventListener("resize", () => { onScroll(); pickActive(); syncSides(); });
+  window.addEventListener("resize", () => { placeTrio(); onScroll(); pickActive(); syncSides(); });
 
   /* ---- video: play the one in front, pause the rest ---- */
   function frontVideo() {
@@ -377,8 +391,31 @@ p { margin: 0; }
   }
   const sides = [...document.querySelectorAll(".trio .side")];
   const wide = window.matchMedia("(min-width: 900px)");
+  const p1 = document.querySelector(".p1"), trio = document.querySelector(".trio");
+  const clips = [...trio.querySelectorAll("video")], dots = [...document.querySelectorAll(".dots i")], hint = document.getElementById("swipeHint");
+  function onTrio() {
+    if (wide.matches) return;
+    const i = Math.max(0, Math.min(clips.length - 1, Math.round(trio.scrollLeft / trio.clientWidth)));
+    dots.forEach((d, k) => d.classList.toggle("on", k === i));
+    if (p1.dataset.video !== clips[i].id) {
+      if (i !== 1 && hint) hint.hidden = true;
+      p1.dataset.video = clips[i].id;
+      pickActive();
+    }
+  }
+  trio.addEventListener("scroll", () => requestAnimationFrame(onTrio), { passive: true });
+  function placeTrio() {
+    if (wide.matches) { p1.dataset.video = "v1"; return; }
+    const i = Math.max(0, clips.findIndex(c => c.id === p1.dataset.video));
+    trio.scrollLeft = trio.clientWidth * i;
+  }
   function syncSides() {
-    const on = wide.matches && active === document.getElementById("v1");
+    if (!wide.matches) {
+      // phones: warm up the neighbouring clips once the Faight card is in front, so swiping feels instant
+      if (clips.includes(active)) clips.forEach(c => { if (c.preload !== "auto") c.preload = "auto"; });
+      return;
+    }
+    const on = active === document.getElementById("v1");
     sides.forEach(s => {
       if (on) { if (s.preload !== "auto") s.preload = "auto"; s.muted = true; s.play().catch(() => {}); }
       else s.pause();
@@ -406,7 +443,7 @@ p { margin: 0; }
   window.addEventListener("keydown", unlock, true);
   videos.forEach(v => ["play", "pause", "volumechange"].forEach(ev => v.addEventListener(ev, setLabel)));
 
-  onScroll(); pickActive();
+  placeTrio(); onScroll(); pickActive();
 })();
 </script>
 </body>
