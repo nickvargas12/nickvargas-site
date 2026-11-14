@@ -228,13 +228,13 @@ p { margin: 0; }
   <div class="stack" id="work">
     <article class="piece p1" data-video="v1" aria-labelledby="t1">
       <div class="trio">
-        <video id="v1a" class="side" playsinline loop muted preload="none" poster="media/faight_side_a_poster.jpg" data-sound="1" aria-label="Alana Silver at The Faight, wide shot with the band">
+        <video id="v1a" class="side" playsinline loop muted preload="metadata" poster="media/faight_side_a_poster.jpg" data-sound="1" aria-label="Alana Silver at The Faight, wide shot with the band">
           <source src="media/faight_side_a.mp4" type="video/mp4">
         </video>
         <video id="v1" class="media" playsinline loop muted preload="auto" poster="media/faight_poster.jpg" data-sound="1">
           <source src="media/faight_song3.mp4" type="video/mp4">
         </video>
-        <video id="v1b" class="side" playsinline loop muted preload="none" poster="media/faight_side_b_poster.jpg" data-sound="1" aria-label="Alana Silver at The Faight, close-up at the mic">
+        <video id="v1b" class="side" playsinline loop muted preload="metadata" poster="media/faight_side_b_poster.jpg" data-sound="1" aria-label="Alana Silver at The Faight, close-up at the mic">
           <source src="media/faight_side_b.mp4" type="video/mp4">
         </video>
       </div>
@@ -470,8 +470,25 @@ p { margin: 0; }
     const on = active && !active.muted && !active.paused;
     btn.setAttribute("aria-checked", on ? "true" : "false");
   }
+  // iPhones only let a clip play sound if that clip was started by a tap. On the first tap, start-and-stop the
+  // swipe clips that aren't showing (silently, same instant) so they all follow the one sound switch; it also gets them loading.
+  const primed = new Set();
+  function prime() {
+    if (wide.matches) return; // desktop side clips never play sound
+    clips.forEach(c => {
+      if (primed.has(c) || c === active || !c.paused) return;
+      const wasMuted = c.muted;
+      c.muted = false;
+      const pr = c.play();
+      c.pause();
+      c.muted = wasMuted;
+      if (pr) pr.then(() => primed.add(c), e => { if (e && e.name === "AbortError") primed.add(c); });
+      else primed.add(c);
+    });
+  }
   btn.addEventListener("click", () => {
     unlocked = true;
+    prime();
     const on = active && !active.muted && !active.paused;
     wantSound = !on;
     if (active) { active.muted = !wantSound; if (wantSound) { active.volume = 1; active.play().catch(() => {}); } }
@@ -479,23 +496,20 @@ p { margin: 0; }
   });
   // any first tap or key press unlocks audio; if sound is wanted, the clip in front starts speaking
   function unlock(e) {
-    if (unlocked || (e && e.target === btn)) return;
+    if (e && e.target === btn) return;
+    if (primed.size < clips.length - 1) prime();
+    if (unlocked) return;
     unlocked = true;
     if (active && wantSound && !active.dataset.silent) { active.muted = false; active.volume = 1; active.play().catch(() => {}); }
     setLabel();
   }
-  window.addEventListener("pointerdown", unlock, true);
-  window.addEventListener("keydown", unlock, true);
+  // touch taps count as a "real" tap on release, so listen for both press and release
+  ["pointerdown", "pointerup", "touchend", "click", "keydown"].forEach(ev => window.addEventListener(ev, unlock, true));
   videos.forEach(v => ["play", "pause", "volumechange"].forEach(ev => v.addEventListener(ev, setLabel)));
 
   placeTrio(); onScroll(); pickActive();
-  // once the main clip can play through, buffer the two swipe/side clips in spare time
-  const main = document.getElementById("v1");
-  let sidesWarm = false;
-  const warmSides = () => { if (sidesWarm) return; sidesWarm = true; whenIdle(() => sides.forEach(s => warm(s, lean ? "metadata" : "auto"))); };
-  if (main.readyState >= 4) warmSides(); else main.addEventListener("canplaythrough", warmSides, { once: true });
-  // phones that don't buffer ahead (iOS) never fire canplaythrough before play; fall back a few seconds after load
-  window.addEventListener("load", () => setTimeout(warmSides, 3000), { once: true });
+  // the two swipe/side clips (1.8 MB each) start loading straight away alongside the main clip; data-saver keeps first frames only
+  if (!lean) sides.forEach(s => warm(s, "auto"));
 })();
 </script>
 </body>
