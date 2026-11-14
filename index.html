@@ -83,6 +83,8 @@ p { margin: 0; }
 
 /* 01 · tall video: full-bleed on phones, a tall frame beside a wine panel on wide screens */
 .p1 { background: var(--wine); }
+.trio { position: absolute; inset: 0; }
+.trio .side { display: none; }
 .p1 .shade { background: linear-gradient(rgba(14,3,8,0.45), rgba(14,3,8,0) 22%, rgba(14,3,8,0) 45%, rgba(14,3,8,0.94)); }
 .p1 .copy { left: clamp(18px, 4vw, 48px); right: clamp(18px, 4vw, 48px); bottom: 40px; }
 /* 02 · wide video */
@@ -110,9 +112,17 @@ p { margin: 0; }
 .p4 .copy h2 { font-size: clamp(32px, 4.2vw, 62px); }
 
 @media (min-width: 900px) {
-  .p1 .media { width: min(56.25vh, 46vw); width: min(56.25svh, 46vw); }
-  .p1 .shade { width: min(56.25vh, 46vw); width: min(56.25svh, 46vw); background: linear-gradient(rgba(14,3,8,0.45), rgba(14,3,8,0) 25%); }
-  .p1 .copy { left: calc(min(56.25vh, 46vw) + 64px); left: calc(min(56.25svh, 46vw) + 64px); right: 48px; bottom: 64px; }
+  /* three vertical clips: the main one (with sound) in the center, two silent highlights either side */
+  .p1 { --mw: min(56.25vh, 36vw); --sw: min(44vh, 26vw); --gap: 16px; }
+  @supports (height: 100svh) { .p1 { --mw: min(56.25svh, 36vw); --sw: min(44svh, 26vw); } }
+  .trio { display: flex; align-items: center; justify-content: center; gap: var(--gap); }
+  .trio video { position: relative; inset: auto; flex: none; height: auto; aspect-ratio: 9 / 16; object-fit: cover; background: #000; }
+  .trio #v1 { width: var(--mw); }
+  .trio .side { display: block; width: var(--sw); filter: brightness(0.6); }
+  .p1 .shade { display: none; }
+  .p1 .copy { left: calc(50% - var(--mw) / 2 - var(--gap) - var(--sw) + 24px); right: auto; width: calc(var(--sw) - 48px); bottom: calc((100% - var(--sw) * 16 / 9) / 2 + 24px); }
+  .p1 .num { font-size: clamp(64px, 6vw, 110px); }
+  .p1 .copy h2 { font-size: clamp(28px, 2.4vw, 40px); }
 }
 @media (max-width: 640px) {
   /* Chipped Nail Polish: on phones the collage scrolls as a normal section so every photo keeps its own shape */
@@ -204,9 +214,17 @@ p { margin: 0; }
 
   <div class="stack" id="work">
     <article class="piece p1" data-video="v1" aria-labelledby="t1">
-      <video id="v1" class="media" playsinline loop muted preload="auto" poster="media/faight_poster.jpg" data-sound="1">
-        <source src="media/faight_song3.mp4" type="video/mp4">
-      </video>
+      <div class="trio">
+        <video class="side" playsinline loop muted preload="none" poster="media/faight_side_a_poster.jpg" aria-hidden="true">
+          <source src="media/faight_side_a.mp4" type="video/mp4">
+        </video>
+        <video id="v1" class="media" playsinline loop muted preload="auto" poster="media/faight_poster.jpg" data-sound="1">
+          <source src="media/faight_song3.mp4" type="video/mp4">
+        </video>
+        <video class="side" playsinline loop muted preload="none" poster="media/faight_side_b_poster.jpg" aria-hidden="true">
+          <source src="media/faight_side_b.mp4" type="video/mp4">
+        </video>
+      </div>
       <div class="shade"></div>
       <div class="copy">
         <span class="num">01</span>
@@ -312,7 +330,7 @@ p { margin: 0; }
   }
   let ticking = false;
   window.addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { onScroll(); pickActive(); ticking = false; }); } }, { passive: true });
-  window.addEventListener("resize", () => { onScroll(); pickActive(); });
+  window.addEventListener("resize", () => { onScroll(); pickActive(); syncSides(); });
 
   /* ---- video: play the one in front, pause the rest ---- */
   function frontVideo() {
@@ -334,6 +352,7 @@ p { margin: 0; }
       playActive();
     }
     setLabel();
+    syncSides();
   }
   function playActive() {
     if (!active) return;
@@ -355,6 +374,15 @@ p { margin: 0; }
       v.volume = from + (to - from) * k;
       if (k < 1) requestAnimationFrame(step); else if (done) done();
     })(t0);
+  }
+  const sides = [...document.querySelectorAll(".trio .side")];
+  const wide = window.matchMedia("(min-width: 900px)");
+  function syncSides() {
+    const on = wide.matches && active === document.getElementById("v1");
+    sides.forEach(s => {
+      if (on) { if (s.preload !== "auto") s.preload = "auto"; s.muted = true; s.play().catch(() => {}); }
+      else s.pause();
+    });
   }
   function setLabel() {
     const on = active && !active.muted && !active.paused;
