@@ -139,7 +139,7 @@ p { margin: 0; }
 }
 @media (max-width: 640px) {
   /* Chipped Nail Polish: on phones the collage scrolls as a normal section so every photo keeps its own shape */
-  .pk { position: relative; height: auto; }
+  .pk { height: auto; } /* taller than the screen: pins once its last photo reaches the bottom (top set in script) */
   .pk .trip { position: static; inset: auto; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: none; gap: 4px; }
   .pk .trip img { grid-column: span 1; height: auto; aspect-ratio: 2 / 3; }
   .pk .trip img.land { grid-column: 1 / -1; aspect-ratio: 3 / 2; }
@@ -331,6 +331,17 @@ p { margin: 0; }
   let wantSound = true, unlocked = false, active = null;
 
   /* ---- stacking: as the next card slides up, the one underneath shrinks back and dims ---- */
+  // a card taller than the screen pins when its bottom reaches the bottom of the screen, then gets stacked over like the rest
+  function stickTall() {
+    const vh = window.innerHeight;
+    pieces.forEach(p => {
+      const over = Math.min(0, vh - p.offsetHeight);
+      p.style.top = over ? over + "px" : "";
+      p.style.transformOrigin = over ? "50% " + -over + "px" : ""; // shrink toward the top of the screen, like the other cards
+    });
+  }
+  stickTall();
+  window.addEventListener("load", stickTall);
   function onScroll() {
     if (reduce) return;
     const vh = window.innerHeight;
@@ -344,7 +355,7 @@ p { margin: 0; }
   }
   let ticking = false;
   window.addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { onScroll(); pickActive(); ticking = false; }); } }, { passive: true });
-  window.addEventListener("resize", () => { placeTrio(); onScroll(); pickActive(); syncSides(); });
+  window.addEventListener("resize", () => { stickTall(); placeTrio(); onScroll(); pickActive(); syncSides(); });
 
   /* ---- video: play the one in front, pause the rest ---- */
   function frontVideo() {
